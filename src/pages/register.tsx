@@ -21,7 +21,6 @@ export const Register: React.FC<RegisterProps> = ({}) => {
         initialValues={{ username: "", password: "" }}
         onSubmit={async (values, { setErrors }) => {
           const response = await register(values);
-          console.log(response);
           if (response.data?.register.errors) {
             // Built-in function to add error message
             setErrors(toErrorMap(response.data.register.errors));
