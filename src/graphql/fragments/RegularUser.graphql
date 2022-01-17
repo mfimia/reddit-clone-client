@@ -1,0 +1,5 @@
+# Create this fragment so we don't have to repeat the fields in all queries
+fragment RegularUser on User {
+  id
+  username
+}
