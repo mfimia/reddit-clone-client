@@ -1,44 +1,35 @@
-import {
-  FormControl,
-  FormLabel,
-  Input,
-  FormErrorMessage,
-  Button,
-  Box,
-} from "@chakra-ui/react";
+import { Button, Box } from "@chakra-ui/react";
 import { Form, Formik } from "formik";
-import { useMutation } from "urql";
+import { useRouter } from "next/router";
 import { InputField } from "../components/InputField";
 import { Wrapper } from "../components/Wrapper";
+import { useRegisterMutation } from "../generated/graphql";
+import { toErrorMap } from "../utils/toErrorMap";
 
 interface RegisterProps {}
 
-// We took this query from graphql playground
-const REGISTER_MUT = `
-mutation Register($username: String!, $password: String! ) {
-  register(options: {username: $username, password: $password}) {
-    errors {
-      field
-      message
-    }
-    user {
-      id
-      username
-    }
-  }
-}
-`;
-
 export const Register: React.FC<RegisterProps> = ({}) => {
+  // Import router from next.js
+  const router = useRouter();
+
   // We don't care about the first option of the hook so we leave it empty
-  // We can now use mutation queries
-  const [, register] = useMutation(REGISTER_MUT);
+  // Take hook from generated graphql (using graphql-codegen)
+  const [, register] = useRegisterMutation();
   return (
     <Wrapper variant="small">
       <Formik
         initialValues={{ username: "", password: "" }}
-        onSubmit={(values) => {
-          register(values);
+        onSubmit={async (values, { setErrors }) => {
+          const response = await register(values);
+          console.log(response);
+          if (response.data?.register.errors) {
+            // Built-in function to add error message
+            setErrors(toErrorMap(response.data.register.errors));
+          } else if (response.data?.register.user) {
+            // It worked
+            // We go back to the homepage
+            router.push("/");
+          }
         }}
       >
         {({ isSubmitting }) => (
