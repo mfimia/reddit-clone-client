@@ -1,9 +1,11 @@
 import { Button, Box } from "@chakra-ui/react";
 import { Form, Formik } from "formik";
+import { withUrqlClient } from "next-urql";
 import { useRouter } from "next/router";
 import { InputField } from "../components/InputField";
 import { Wrapper } from "../components/Wrapper";
 import { useLoginMutation } from "../generated/graphql";
+import { createUrqlClient } from "../utils/createUrqlClient";
 import { toErrorMap } from "../utils/toErrorMap";
 
 // interface RegisterProps {}
@@ -60,4 +62,5 @@ export const Login: React.FC<{}> = ({}) => {
   );
 };
 
-export default Login;
+// we dont want server side rendering on this page, so we disable it
+export default withUrqlClient(createUrqlClient, { ssr: false })(Login);
