@@ -1,8 +1,7 @@
 # Query taken from graphql playground
 # To be converted into graphql ts syntax (generated folder)
-
-mutation Register($username: String!, $password: String!) {
-  register(options: { username: $username, password: $password }) {
+mutation Register($options: UsernamePasswordInput!) {
+  register(options: $options) {
     errors {
       field
       message

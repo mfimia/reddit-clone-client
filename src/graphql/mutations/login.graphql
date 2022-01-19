@@ -1,6 +1,7 @@
-# Declaring options as input type
-mutation Login($options: UsernamePasswordInput!) {
-  login(options: $options) {
+# graphql actions that our client can do
+# takes an username or email and password and makes this query
+mutation Login($usernameOrEmail: String!, $password: String!) {
+  login(usernameOrEmail: $usernameOrEmail, password: $password) {
     errors {
       field
       message
