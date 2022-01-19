@@ -3,12 +3,19 @@ import { Box, Button, Flex, Link } from "@chakra-ui/react";
 import React, { Fragment } from "react";
 import NextLink from "next/link";
 import { useMeQuery, useLogoutMutation } from "../generated/graphql";
+import { isServer } from "../utils/isServer";
 
 interface NavBarProps {}
 
 export const NavBar: React.FC<NavBarProps> = ({}) => {
   const [{ fetching: logoutFetching }, logout] = useLogoutMutation();
-  const [{ data, fetching }] = useMeQuery();
+  const [{ data, fetching }] = useMeQuery({
+    // dont run me query when we are on the server
+    pause: isServer(),
+  });
+
+  console.log("data: ", data);
+
   let body = null;
   // data is loading
   if (fetching) {
@@ -17,12 +24,12 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     body = (
       <Fragment>
         <NextLink href={"/login"}>
-          <Link color={"white"} mr={2} href={""}>
+          <Link color={"white"} mr={2}>
             Login
           </Link>
         </NextLink>
         <NextLink href={"/register"}>
-          <Link color={"white"} href={""}>
+          <Link variant={"span"} color={"white"}>
             Register
           </Link>
         </NextLink>
