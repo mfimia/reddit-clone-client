@@ -14,8 +14,6 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     pause: isServer(),
   });
 
-  console.log("data: ", data);
-
   let body = null;
   // data is loading
   if (fetching) {
@@ -51,7 +49,7 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     );
   }
   return (
-    <Flex p={4} bg="tomato">
+    <Flex position={"sticky"} top={0} zIndex={2} p={4} bg="tomato">
       <Box ml="auto">{body}</Box>
     </Flex>
   );

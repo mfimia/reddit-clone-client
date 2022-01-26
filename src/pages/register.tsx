@@ -1,4 +1,4 @@
-import { Button, Box } from "@chakra-ui/react";
+import { Box, Button } from "@chakra-ui/react";
 import { Form, Formik } from "formik";
 import { withUrqlClient } from "next-urql";
 import { useRouter } from "next/router";
