@@ -1,15 +1,17 @@
-import { dedupExchange, Exchange, fetchExchange } from "urql";
+import { stringifyVariables } from "@urql/core";
 import { cacheExchange } from "@urql/exchange-graphcache";
-import { betterUpdateQuery } from "./betterUpdateQuery";
+import Router from "next/router";
+import { dedupExchange, Exchange, fetchExchange } from "urql";
+import { pipe, tap } from "wonka";
 import {
-  LogoutMutation,
-  MeQuery,
-  MeDocument,
   LoginMutation,
+  LogoutMutation,
+  MeDocument,
+  MeQuery,
   RegisterMutation,
 } from "../generated/graphql";
-import { pipe, tap } from "wonka";
-import Router from "next/router";
+import { NullArray, Resolver, Variables } from "../types";
+import { betterUpdateQuery } from "./betterUpdateQuery";
 
 // this piece of code will catch all errors. comes from urql's wonka library
 const errorExchange: Exchange =
@@ -26,6 +28,99 @@ const errorExchange: Exchange =
     );
   };
 
+export type MergeMode = "before" | "after";
+
+export interface PaginationParams {
+  offsetArgument?: string;
+  limitArgument?: string;
+  mergeMode?: MergeMode;
+}
+
+export const cursorPagination = (): Resolver => {
+  // set the pagination into a large object. pages are cached
+  // when user clicks on load more, page 2 is added to page one
+  return (
+    _parent: any,
+    _: any,
+    cache: {
+      inspectFields: (arg0: any) => any;
+      resolveFieldByKey: (arg0: any, arg1: string) => string[];
+    },
+    info: { parentKey: any; fieldName: any; partial: boolean }
+  ) => {
+    const { parentKey: entityKey, fieldName } = info;
+    const allFields = cache.inspectFields(entityKey);
+    const fieldInfos = allFields.filter(
+      (info: { fieldName: any }) => info.fieldName === fieldName
+    );
+    const size = fieldInfos.length;
+    if (size === 0) {
+      return undefined;
+    }
+
+    // info.partial = true;
+    const results: string[] = [];
+    fieldInfos.forEach((fi: { fieldKey: string }) => {
+      const data = cache.resolveFieldByKey(entityKey, fi.fieldKey) as string[];
+      results.push(...data);
+    });
+
+    return results;
+
+    // const visited = new Set();
+    // let result: NullArray<string> = [];
+    // let prevOffset: number | null = null;
+
+    // for (let i = 0; i < size; i++) {
+    //   const { fieldKey, arguments: args } = fieldInfos[i];
+    //   if (args === null || !compareArgs(fieldArgs, args)) {
+    //     continue;
+    //   }
+
+    //   const links = cache.resolve(entityKey, fieldKey) as string[];
+    //   const currentOffset = args[cursorArgument];
+
+    //   if (
+    //     links === null ||
+    //     links.length === 0 ||
+    //     typeof currentOffset !== "number"
+    //   ) {
+    //     continue;
+    //   }
+
+    //   const tempResult: NullArray<string> = [];
+
+    //   for (let j = 0; j < links.length; j++) {
+    //     const link = links[j];
+    //     if (visited.has(link)) continue;
+    //     tempResult.push(link);
+    //     visited.add(link);
+    //   }
+
+    //   if (
+    //     (!prevOffset || currentOffset > prevOffset) ===
+    //     (mergeMode === "after")
+    //   ) {
+    //     result = [...result, ...tempResult];
+    //   } else {
+    //     result = [...tempResult, ...result];
+    //   }
+
+    //   prevOffset = currentOffset;
+    // }
+
+    // const hasCurrentPage = cache.resolve(entityKey, fieldName, fieldArgs);
+    // if (hasCurrentPage) {
+    //   return result;
+    // } else if (!(info as any).store.schema) {
+    //   return undefined;
+    // } else {
+    //   info.partial = true;
+    //   return result;
+    // }
+  };
+};
+
 export const createUrqlClient = (ssrExchange: any) => ({
   url: "http://localhost:4000/graphql",
   fetchOptions: {
@@ -37,6 +132,11 @@ export const createUrqlClient = (ssrExchange: any) => ({
   exchanges: [
     dedupExchange,
     cacheExchange({
+      resolvers: {
+        Query: {
+          posts: cursorPagination(),
+        },
+      },
       updates: {
         Mutation: {
           logout: (_result, args, cache, info) => {
