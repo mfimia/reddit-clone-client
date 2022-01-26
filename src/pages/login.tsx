@@ -1,13 +1,13 @@
-import { Button, Box, Link, Flex } from "@chakra-ui/react";
+import { Box, Button, Flex, Link } from "@chakra-ui/react";
 import { Form, Formik } from "formik";
 import { withUrqlClient } from "next-urql";
+import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { InputField } from "../components/InputField";
 import { Wrapper } from "../components/Wrapper";
 import { useLoginMutation } from "../generated/graphql";
 import { createUrqlClient } from "../utils/createUrqlClient";
 import { toErrorMap } from "../utils/toErrorMap";
-import NextLink from "next/link";
 
 // interface RegisterProps {}
 
@@ -28,9 +28,14 @@ export const Login: React.FC<{}> = ({}) => {
             // Built-in function to add error message
             setErrors(toErrorMap(response.data.login.errors));
           } else if (response.data?.login.user) {
-            // It worked
-            // We go back to the homepage
-            router.push("/");
+            // if we had a params query, we redirect there instead
+            if (typeof router.query.next === "string") {
+              router.push(router.query.next);
+              // It worked
+              // We go back to the homepage
+            } else {
+              router.push("/");
+            }
           }
         }}
       >
