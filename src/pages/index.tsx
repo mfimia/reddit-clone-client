@@ -9,15 +9,18 @@ import {
 } from "@chakra-ui/react";
 import { withUrqlClient } from "next-urql";
 import NextLink from "next/link";
+import { useState } from "react";
 import { Layout } from "../components/Layout";
 import { usePostsQuery } from "../generated/graphql";
 import { createUrqlClient } from "../utils/createUrqlClient";
 
 const Index = () => {
+  const [variables, setVariables] = useState({
+    limit: 10,
+    cursor: null as null | string,
+  });
   const [{ data, fetching }] = usePostsQuery({
-    variables: {
-      limit: 10,
-    },
+    variables,
   });
 
   // situation -> we are done loading but there is no data
@@ -48,7 +51,16 @@ const Index = () => {
       )}
       {data && (
         <Flex justifyContent="center">
-          <Button isLoading={fetching} my={8}>
+          <Button
+            onClick={() => {
+              setVariables({
+                limit: variables.limit,
+                cursor: data.posts[data.posts.length - 1].createdAt,
+              });
+            }}
+            isLoading={fetching}
+            my={8}
+          >
             Load more
           </Button>
         </Flex>
