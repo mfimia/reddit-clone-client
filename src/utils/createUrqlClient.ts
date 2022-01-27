@@ -1,7 +1,11 @@
-import { stringifyVariables } from "@urql/core";
-import { cacheExchange } from "@urql/exchange-graphcache";
+import { cacheExchange, Resolver } from "@urql/exchange-graphcache";
 import Router from "next/router";
-import { dedupExchange, Exchange, fetchExchange } from "urql";
+import {
+  dedupExchange,
+  Exchange,
+  fetchExchange,
+  stringifyVariables,
+} from "urql";
 import { pipe, tap } from "wonka";
 import {
   LoginMutation,
@@ -10,7 +14,6 @@ import {
   MeQuery,
   RegisterMutation,
 } from "../generated/graphql";
-import { NullArray, Resolver, Variables } from "../types";
 import { betterUpdateQuery } from "./betterUpdateQuery";
 
 // this piece of code will catch all errors. comes from urql's wonka library
@@ -39,26 +42,20 @@ export interface PaginationParams {
 export const cursorPagination = (): Resolver => {
   // set the pagination into a large object. pages are cached
   // when user clicks on load more, page 2 is added to page one
-  return (
-    _parent: any,
-    _: any,
-    cache: {
-      inspectFields: (arg0: any) => any;
-      resolveFieldByKey: (arg0: any, arg1: string) => string[];
-    },
-    info: { parentKey: any; fieldName: any; partial: boolean }
-  ) => {
+  return (_parent, fieldArgs, cache, info) => {
     const { parentKey: entityKey, fieldName } = info;
     const allFields = cache.inspectFields(entityKey);
-    const fieldInfos = allFields.filter(
-      (info: { fieldName: any }) => info.fieldName === fieldName
-    );
+    const fieldInfos = allFields.filter((info) => info.fieldName === fieldName);
     const size = fieldInfos.length;
     if (size === 0) {
       return undefined;
     }
 
-    // info.partial = true;
+    // check if there is stuff in the cache. if so, set info.partial to true
+    const fieldKey = `${fieldName}(${stringifyVariables(fieldArgs)})`;
+    const isItInTheCache = cache.resolveFieldByKey(entityKey, fieldKey);
+    info.partial = !isItInTheCache;
+
     const results: string[] = [];
     fieldInfos.forEach((fi: { fieldKey: string }) => {
       const data = cache.resolveFieldByKey(entityKey, fi.fieldKey) as string[];
